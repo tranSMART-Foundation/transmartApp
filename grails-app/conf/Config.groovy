@@ -64,11 +64,7 @@ if (externalDataSource) {
 }
 grails.config.locations.each { console.info "Including configuration file [${it}] in configuration building." }
 
-/*
- *  The following lines are copied from the previous COnfig.groovy
- *
- */
-
+grails.mime.disable.accept.header.userAgents = []
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
 grails.mime.types = [html         : [
         'text/html',
@@ -218,32 +214,27 @@ log4j = {
             }
         }
     }
+
+    warn 'org.codehaus.groovy.grails.commons.cfg.ConfigurationHelper'
 }
 
-// Uncomment and edit the following lines to start using Grails encoding & escaping improvements
-
-/* remove this line
-// GSP settings
 grails {
-    views {
-        gsp {
-            encoding = 'UTF-8'
-            htmlcodec = 'xml' // use xml escaping instead of HTML4 escaping
-            codecs {
-                expression = 'html' // escapes values inside null
-                scriptlet = 'none' // escapes output from scriptlets in GSPs
-                taglib = 'none' // escapes output from taglibs
-                staticparts = 'none' // escapes output from static template parts
-            }
-        }
-        // escapes all not-encoded output at final stage of outputting
-        filteringCodecForContentType {
-            //'text/html' = 'html'
+    cache {
+        enabled = true
+        ehcache {
+            ehcacheXmlLocation = 'classpath:ehcache.xml'
+            reloadable = false
         }
     }
 }
-remove this line */
 
-/*
-// MetaCore plugin
-com.thomsonreuters.transmart.metacoreAnalyticsEnable=true */
+// Added by the Spring Security OAuth2 Provider plugin:
+grails.plugin.springsecurity.oauthProvider.clientLookup.className = 'org.transmart.oauth2.Client'
+grails.plugin.springsecurity.oauthProvider.authorizationCodeLookup.className = 'org.transmart.oauth2.AuthorizationCode'
+grails.plugin.springsecurity.oauthProvider.accessTokenLookup.className = 'org.transmart.oauth2.AccessToken'
+grails.plugin.springsecurity.oauthProvider.refreshTokenLookup.className = 'org.transmart.oauth2.RefreshToken'
+
+// Disable LDAP by default to prevent authentication errors for installations without LDAP
+grails.plugin.springsecurity.ldap.active = false
+org.transmart.security.ldap.mappedUsernameProperty = 'username'
+org.transmart.security.ldap.inheritPassword = true

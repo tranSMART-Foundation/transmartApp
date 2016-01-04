@@ -24,6 +24,8 @@ import javax.xml.xpath.XPathFactory
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Statement
+import java.net.URL;
+import java.net.MalformedURLException;
 
 import static org.transmart.authorization.QueriesResourceAuthorizationDecorator.checkQueryResultAccess
 
@@ -59,6 +61,8 @@ class I2b2HelperService {
         sql.eachRow(sqlt, [result_instance_id], { row ->
             values.add(row[0])
         });
+        // remove missing values from the distribution
+        values = values.findAll { it != null }
         double[] returnvalues = new double[values.size()];
         for (int i = 0; i < values.size(); i++) {
             returnvalues[i] = values.get(i);
@@ -599,17 +603,32 @@ class I2b2HelperService {
 
         log.trace("Getting observation count for concept:" + concept_key + " and instance:" + result_instance_id);
         String fullname = concept_key.substring(concept_key.indexOf("\\", 2), concept_key.length());
+        String fullnameLike = fullname.asLikeLiteral() + "%" // Note: .asLikeLiteral() defined in github: 994dc5bb50055f8b800045f65c8e565b4aa0c113
         int i = 0;
+        log.trace("sql inputs: fullnameLike = " + fullnameLike)
+        log.trace("\tresult_instance_id = " + result_instance_id)
         Sql sql = new Sql(dataSource);
-        String sqlt = """select count (*) as obscount FROM i2b2demodata.observation_fact
-		    WHERE (((concept_cd IN (select concept_cd from i2b2demodata.concept_dimension c
-			where concept_path LIKE ? escape '\\')))) AND PATIENT_NUM IN (select distinct patient_num from qt_patient_set_collection where result_instance_id = ?)""";
+        String sqlt = """
+            select count(*) from (
+                select distinct patient_num
+                FROM i2b2demodata.observation_fact
+                WHERE concept_cd IN (
+                        select concept_cd
+                        from i2b2demodata.concept_dimension c
+                        where concept_path LIKE ? escape '\\')
+                    AND PATIENT_NUM IN (
+                        select distinct patient_num
+                        from qt_patient_set_collection
+                        where result_instance_id = ?)
+            ) subjectList
+        """
         sql.eachRow(sqlt, [
-                fullname.asLikeLiteral() + "%", // Note: .asLikeLiteral() defined in github: 994dc5bb50055f8b800045f65c8e565b4aa0c113
+                fullnameLike,
                 result_instance_id
         ], { row ->
             i = row[0]
         })
+        log.trace("count = " + i)
         return i;
     }
 
@@ -684,9 +703,15 @@ class I2b2HelperService {
                 newrow.put("SAMPLE_CDS", cds ? cds : "")
                 newrow.put("subset", subset);
                 newrow.put("TRIAL", row.TRIAL)
-                newrow.put("SEX_CD", row.SEX_CD ? (row.SEX_CD.toLowerCase().equals("m") || row.SEX_CD.toLowerCase().equals("male") ? "male" : (row.SEX_CD.toLowerCase().equals("f") || row.SEX_CD.toLowerCase().equals("female") ? "female" : "NULL")) : "NULL")
-                newrow.put("AGE_IN_YEARS_NUM", row.SEX_CD ? (row.AGE_IN_YEARS_NUM.toString().equals("0") ? "NULL" : row.AGE_IN_YEARS_NUM.toString()) : "NULL")
-                newrow.put("RACE_CD", row.RACE_CD ? (row.RACE_CD.toLowerCase().equals("unknown") ? "NULL" : row.RACE_CD.toLowerCase()) : "NULL")
+                if (row.SEX_CD) {
+                    newrow.put("SEX_CD", row.SEX_CD.toLowerCase().equals("m") || row.SEX_CD.toLowerCase().equals("male") ? "male" : (row.SEX_CD.toLowerCase().equals("f") || row.SEX_CD.toLowerCase().equals("female") ? "female" : "NULL") )
+                }
+                if (row.AGE_IN_YEARS_NUM) {
+                    newrow.put("AGE_IN_YEARS_NUM", row.AGE_IN_YEARS_NUM.toString())
+                }
+                if (row.RACE_CD) {
+                    newrow.put("RACE_CD", row.RACE_CD.toLowerCase())
+                }
                 tablein.putRow(subject, newrow);
             }
         })
@@ -732,23 +757,48 @@ class I2b2HelperService {
     }
 
     /**
+     * Checks if a string represents a URL
+     */
+    Boolean isURL(String s) {
+        Boolean isurl
+        // Attempt to convert string into an URL.
+        try {
+            URL url = new URL(s)
+            isurl = true
+        } catch (MalformedURLException e) {
+            isurl = false
+        }
+    }
+
+    /**
      * Adds a column of data to the grid export table
      */
     def ExportTableNew addConceptDataToTable(ExportTableNew tablein, String concept_key, String result_instance_id) {
         checkQueryResultAccess result_instance_id
 
+        /* As the column headers only show the (in many cases ambiguous) leaf part of the concept path,
+         * showing the full concept path in the tooltip is much more informative.
+         * As no tooltip text is passed on to the GridView code, the value of the string columnid is used
+         * and shown as the tooltip text when hoovering over the column header in GridView.
+         * Explicitly passing a tooltip text to the GridView code removes the necessity to use this columnid value.
+         * Removal of some undesired non-alpha-numeric characters from tooltip string
+         * prevents display errors in GridView (drop down menu, columns not showing or cells not being filled).
+         */
         String columnid = concept_key.encodeAsSHA1()
         String columnname = getColumnNameFromKey(concept_key).replace(" ", "_")
+        String columntooltip = keyToPath(concept_key).replaceAll('[^a-zA-Z0-9_\\-\\\\]+','_')
         if (isLeafConceptKey(concept_key)) {
             /*add the column to the table if its not there*/
             if (tablein.getColumn("subject") == null) {
                 tablein.putColumn("subject", new ExportColumn("subject", "Subject", "", "string"));
             }
-            if (tablein.getColumn(columnid) == null) {
-                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", "number"));
-            }
 
             if (isValueConceptKey(concept_key)) {
+
+                if (tablein.getColumn(columnid) == null) {
+                    tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", "number", columntooltip));
+                }
+
                 /*get the data*/
                 String concept_cd = getConceptCodeFromKey(concept_key);
                 Sql sql = new Sql(dataSource)
@@ -775,6 +825,11 @@ class I2b2HelperService {
                     }
                 })
             } else {
+
+                if (tablein.getColumn(columnid) == null) {
+                    tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", "string", columntooltip));
+                }
+
                 String concept_cd = getConceptCodeFromKey(concept_key);
                 Sql sql = new Sql(dataSource)
                 String sqlt = """SELECT PATIENT_NUM, TVAL_CHAR, START_DATE FROM OBSERVATION_FACT f WHERE CONCEPT_CD = ? AND
@@ -792,22 +847,20 @@ class I2b2HelperService {
                     if (value == null) {
                         value = "Y";
                     }
+                    if (isURL(value)) {
+                        /* Embed URL in a HTML Link */
+                        value = "<a href=\"" + value + "\" target=\"_blank\">" + value + "</a>";
+                    }                    
                     if (tablein.containsRow(subject)) /*should contain all subjects already if I ran the demographics first*/ {
                         tablein.getRow(subject).put(columnid, value.toString());
                     } else
-                    /*fill the row*/ {
+                        /*fill the row*/ {
                         ExportRowNew newrow = new ExportRowNew();
                         newrow.put("subject", subject);
                         newrow.put(columnid, value.toString());
                         tablein.putRow(subject, newrow);
                     }
                 });
-            }
-            //pad all the empty values for this column
-            for (ExportRowNew row : tablein.getRows()) {
-                if (!row.containsColumn(columnid)) {
-                    row.put(columnid, "NULL");
-                }
             }
         } else {
             // If a folder is dragged in, we want the contents of the folder to be added to the data
@@ -833,7 +886,7 @@ class I2b2HelperService {
                 tablein.putColumn("subject", new ExportColumn("subject", "Subject", "", "string"));
             }
             if (tablein.getColumn(columnid) == null) {
-                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", "string"));
+                tablein.putColumn(columnid, new ExportColumn(columnid, columnname, "", "string", columntooltip));
             }
 
             // Store the concept paths to query
@@ -844,20 +897,26 @@ class I2b2HelperService {
             def concepts = conceptCriteria.list {
                 'in'("conceptPath", paths)
             }
-
-            // Determine the patients to query
-            def patientIds = QtPatientSetCollection.executeQuery("SELECT q.patient.id FROM QtPatientSetCollection q WHERE q.resultInstance.id = ?", result_instance_id.toLong())
-            patientIds = patientIds.collect { BigDecimal.valueOf(it) }
-
-            // If nothing is found, return
-            if (!concepts || !patientIds) {
+            if (!concepts) {
                 return
             }
 
             // After that, retrieve all data entries for the children
-            def results = ObservationFact.executeQuery("SELECT o.patient.id, o.textValue FROM ObservationFact o WHERE conceptCode IN (:conceptCodes) AND o.patient.id in (:patientNums)", [conceptCodes: concepts*.conceptCode, patientNums: patientIds.collect {
-                it?.toLong()
-            }])
+            def results = ObservationFact.executeQuery("""
+                    SELECT o.patient.id, o.textValue
+                    FROM ObservationFact o
+                    WHERE conceptCode IN (:conceptCodes) AND o.patient.id IN (
+                        SELECT q.patient.id FROM QtPatientSetCollection q
+                        WHERE q.resultInstance.id = :resultInstanceId
+                    )""",
+                    [
+                            conceptCodes: concepts*.conceptCode,
+                            resultInstanceId: result_instance_id.toLong(),
+                    ])
+
+            if (results.isEmpty()) {
+                return
+            }
 
             results.each { row ->
 
@@ -867,6 +926,10 @@ class I2b2HelperService {
                 if (value == null) {
                     value = "Y";
                 }
+                if (isURL(value)) {
+                    /* Embed URL in a HTML Link */
+                    value = "<a href=\"" + value + "\" target=\"_blank\">" + value + "</a>"
+                }
                 if (tablein.containsRow(subject)) /*should contain all subjects already if I ran the demographics first*/ {
                     tablein.getRow(subject).put(columnid, value.toString());
                 } else /*fill the row*/ {
@@ -874,13 +937,6 @@ class I2b2HelperService {
                     newrow.put("subject", subject);
                     newrow.put(columnid, value.toString());
                     tablein.putRow(subject, newrow);
-                }
-            }
-
-            //pad all the empty values for this column
-            for (ExportRowNew row : tablein.getRows()) {
-                if (!row.containsColumn(columnid)) {
-                    row.put(columnid, "N");
                 }
             }
         }

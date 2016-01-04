@@ -4,7 +4,10 @@ import com.recomdata.transmart.data.export.exception.DataNotFoundException
 import com.recomdata.transmart.data.export.util.FTPUtil
 import com.recomdata.transmart.data.export.util.ZipUtil
 import grails.util.Holders
+import groovy.util.logging.Log4j
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.StringUtils
+import org.codehaus.groovy.grails.support.PersistenceContextInterceptor
 import org.quartz.Job
 import org.quartz.JobDetail
 import org.quartz.JobExecutionContext
@@ -22,6 +25,7 @@ import java.lang.reflect.UndeclaredThrowableException
  * @author MMcDuffie
  *
  */
+@Log4j
 class GenericJobExecutor implements Job {
 
     def ctx = Holders.grailsApplication.mainContext
@@ -76,11 +80,16 @@ class GenericJobExecutor implements Job {
         quartzSpringScope."${CurrentUserBeanProxyFactory.SUB_BEAN_QUARTZ}" =
                 userInContext
 
+        PersistenceContextInterceptor interceptor
         try {
+            interceptor = Holders.applicationContext.persistenceInterceptor
+            interceptor.init()
             doExecute(jobExecutionContext.jobDetail)
         } finally {
             // Thread will be reused, need to clear user in context
             quartzSpringScope.clear()
+            interceptor.flush()
+            interceptor.destroy()
         }
     }
 
@@ -95,6 +104,10 @@ class GenericJobExecutor implements Job {
         //Initialize the jobTmpDirectory which will be used during bundling in ZipUtil
         jobTmpDirectory = tempFolderDirectory + File.separator + "${jobName}" + File.separator
         jobTmpDirectory = jobTmpDirectory.replace("\\", "\\\\")
+        if (new File(jobTmpDirectory).exists()) {
+            log.warn("The job folder ${jobTmpDirectory} already exists. It's going to be overwritten.")
+            FileUtils.deleteDirectory(new File(jobTmpDirectory))
+        }
         jobTmpWorkingDirectory = jobTmpDirectory + "workingDirectory"
 
         //Try to make the working directory.
@@ -379,6 +392,10 @@ class GenericJobExecutor implements Job {
 
     def boolean isJobCancelled(jobName) {
         boolean jobCancelled = false
+
+        //if no job has been submitted, it cannot be cancelled
+        if (! jobName) return false
+
         //log.debug("Checking to see if the user cancelled the job")
         if (jobResultsService[jobName]["Status"] == "Cancelled") {
             log.warn("${jobName} has been cancelled")

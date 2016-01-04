@@ -104,7 +104,7 @@ function showDataUploadForm() {
 	
 	ANALYSIS_TYPE = $j('#dataType').val();
 	var title = $j('#dataType option:selected').text();
-	$j('#dataFormTitle2').html('Upload ' + title + ' Data')
+	$j('#dataFormTitle2').html('Upload ' + title + ' Data');
 	if (ANALYSIS_TYPE == 'EQTL') {
 		$j('#tagsLabel').html('Disease:');
 		$j('#platformLabel').html('Genotype Platform:');
@@ -333,7 +333,7 @@ function addResearchUnit(field) {
 
 addDiseaseTag = function(diseaseHierarchy, sourceAndCode, escapedFieldName) {
     var diseasePath = "";
-    var diseases = diseaseHierarchy
+    var diseases = diseaseHierarchy;
     var diseasePathName = "";
     var diseaseName = "";
 
@@ -351,8 +351,8 @@ addDiseaseTag = function(diseaseHierarchy, sourceAndCode, escapedFieldName) {
     jQuery("#" + escapedFieldName + "-input").val('').focus();
 
     //Check for supersets - confirm and remove
-    var conflicts = []
-    var subsets = []
+    var conflicts = [];
+    var subsets = [];
     var existingDiseases = $j('#' + escapedFieldName + ' option');
     for (var i = 0; i < existingDiseases.length; i++) {
         var pathToExamine = $j(existingDiseases[i]).text();
@@ -392,14 +392,14 @@ addDiseaseTag = function(diseaseHierarchy, sourceAndCode, escapedFieldName) {
     var tagBreak = $j('<br/>', { id: escapedFieldName + '-tag-' + sourceAndCode + '-break' });
 
     if (newTagPrefix.text() != "") {
-        $j('#' + escapedFieldName + '-tags').append(newTagPrefix)
+        $j('#' + escapedFieldName + '-tags').append(newTagPrefix);
     }
 
     $j('#' + escapedFieldName + '-tags').append(newTag).append(tagBreak);
     newTag.hide().fadeIn('slow');
 
     return false;
-}
+};
 
 addObservationTag = function(observationName, sourceAndCode, escapedFieldName) {
     jQuery("#" + escapedFieldName + "-input").val('').focus();
@@ -415,7 +415,7 @@ addObservationTag = function(observationName, sourceAndCode, escapedFieldName) {
     newTag.hide().fadeIn('slow');
 
     return false;
-}
+};
 
 jQuery(document).ready(function() {
 
@@ -436,16 +436,16 @@ jQuery(document).ready(function() {
             changeField('study-combobox', 'study');
             jQuery('#formPage2').hide();
             jQuery('#formPage1').show();
-            jQuery('.dataFormTitle').text("Upload Analysis Data");
+            jQuery('.dataFormTitle').text("Upload GWAS results");
         }
         else {
             if (jQuery(this).attr('id') == 'uploadFileDatasetExplorerRadio') {
                 UPLOAD_STUDY_TYPE = 'i2b2';
-                jQuery('.dataFormTitle').text("Upload File to Dataset Explorer");
+                jQuery('.dataFormTitle').text("Upload File to Analyze");
             }
             else if (jQuery(this).attr('id') == 'uploadFileRadio') {
                 UPLOAD_STUDY_TYPE = 'Experiment';
-                jQuery('.dataFormTitle').text("Upload File to Faceted Search");
+                jQuery('.dataFormTitle').text("Upload File to GWAS");
             }
             jQuery('#uploadAnalysisPane').hide();
             jQuery('#enterMetadataButton').hide();

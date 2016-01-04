@@ -33,6 +33,7 @@ import org.jfree.data.general.PieDataset
 import org.jfree.data.statistics.*
 import org.transmart.searchapp.AccessLog
 import org.transmart.searchapp.AuthUser
+import org.transmartproject.core.users.User
 
 import javax.servlet.ServletException
 import javax.servlet.ServletOutputStream
@@ -50,6 +51,8 @@ class ChartController {
 
     def i2b2HelperService
     def springSecurityService
+    def accessLogService
+    User currentUserBean
 
 
     def displayChart = {
@@ -435,7 +438,7 @@ class ChartController {
         pw.write("</td>");
         pw.write("<td><img src='" + graphURL7 + "' width=200 height=300 border=0 usemap='#" + filename7 + "'>");
         String rmodulesVersion = grailsApplication.mainContext.pluginManager.getGrailsPlugin('rdc-rmodules').version;
-        pw.write("<td valign='top'><div style='position:relative;left:-30px;'><a  href=\"javascript:showInfo('plugins/rdc-rmodules-$rmodulesVersion/help/boxplot.html');\"><img src=\"../images/information.png\"></a></div></td>");
+        pw.write("<td valign='top'><div style='position:relative;left:-30px;'><a  href=\"javascript:showInfo('plugins/rdc-rmodules-$rmodulesVersion/help/boxplot.html');\"><img src=\"${resource(dir:'images',file:'information.png')}\"></a></div></td>");
         //Should be dynamic to plugin!
         pw.write("</td><td align='center'>");
         if (s2 && l2.size() > 0) {
@@ -660,6 +663,26 @@ class ChartController {
         pw.flush();
 
         request.getSession().setAttribute("gridtable", table);
+    }
+
+    def reportGridTableExport() {
+
+        ExportTableNew gridTable = request.session.gridtable
+
+        def exportedVariablesCsv = gridTable.columnMap.entrySet()
+                .collectAll { "${it.value.label} (id = ${it.key})" }.join(', ')
+
+        def trialsCsv = gridTable.rows
+                .collectAll { it['TRIAL'] }.unique().join(', ')
+
+        accessLogService.report(currentUserBean, 'Grid View Data Export',
+                eventMessage: "User (IP: ${request.getHeader('X-FORWARDED-FOR') ?: request.remoteAddr}) just exported" +
+                        " data for tieal(s) (${trialsCsv}): variables (${exportedVariablesCsv}) measurements for the" +
+                        " folowing patients set(s): " +
+                        [params.result_instance_id1, params.result_instance_id2].findAll().join(', '),
+                requestURL: request.forwardURI)
+
+        render 'ok'
     }
 
     def clearGrid = {
@@ -1220,7 +1243,7 @@ for (int i = 0; i < mapsize; i++)
                 ChartUtilities.writeImageMap(pw, filename, info, false);
                 pw.write("</td>");
                 String rmodulesVersion = grailsApplication.mainContext.pluginManager.getGrailsPlugin('rdc-rmodules').version;
-                pw.write("<td valign='top'><div style='position:relative;left:-10px;'><a  href=\"javascript:showInfo('plugins/rdc-rmodules-$rmodulesVersion/help/boxplot.html');\"><img src=\"../images/information.png\"></a></div></td>");
+                pw.write("<td valign='top'><div style='position:relative;left:-10px;'><a  href=\"javascript:showInfo('plugins/rdc-rmodules-$rmodulesVersion/help/boxplot.html');\"><img src=\"${resource(dir:'images',file:'information.png')}\"></a></div></td>");
                 //Should be dynamic to plugin!
                 pw.write("<td>")
                 pw.write("<table><tr><td>");

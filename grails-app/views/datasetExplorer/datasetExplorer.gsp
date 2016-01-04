@@ -74,6 +74,8 @@
     <link rel="stylesheet" type="text/css" href="${resource(dir: 'css/jquery/ui', file: 'jquery-ui-1.9.1.custom.css')}">
     <link rel="stylesheet" type="text/css" href="${resource(dir: 'css/jquery/skin', file: 'ui.dynatree.css')}">
     <link rel="stylesheet" type="text/css" href="${resource(dir: 'css', file: 'datasetExplorer.css')}">
+    <link rel="stylesheet" type="text/css" href="${resource(dir:'css', file:'folderManagement.css', plugin: 'folder-management')}">
+    <script type="text/javascript" src="${resource(dir:'js', file:'folderManagementDE.js', plugin: 'folder-management')}"></script>
 
     <!-- Adding these validation functions to get the Forest Plot to work. These might be able to be blended into the javascript object that controls the advanced workflow validation. -->
     <script type="text/javascript"
@@ -148,6 +150,7 @@
             SNPType: '',
             basePath: pageInfo.basePath,
             hideAcrossTrialsPanel: '${grailsApplication.config.com.recomdata.datasetExplorer.hideAcrossTrialsPanel}',
+            sampleExplorerEnabled: ${!grailsApplication.config.ui.tabs.sampleExplorer.hide},
             metacoreAnalyticsEnabled: '${grailsApplication.config.com.thomsonreuters.transmart.metacoreAnalyticsEnable}',
             metacoreUrl: '${grailsApplication.config.com.thomsonreuters.transmart.metacoreURL}',
             AnalysisHasBeenRun: false,
@@ -200,8 +203,10 @@
 <tmpl:/RWG/filterBrowser/>
 <div id="sidebartoggle">&nbsp;</div>
 
-<div id="noAnalyzeResults" style="display: none;">No subject-level results found.<br/><g:link controller="RWG"
-                                                                                              action="index">Switch to Browse view</g:link>
+<div id="noAnalyzeResults" style="display: none;">No subject-level results found.<br/>
+<g:if test="${!grailsApplication.config.ui.tabs.browse.hide}">
+    <g:link controller="RWG" action="index">Switch to Browse view</g:link>
+</g:if>
 </div>
 
 <div id="filter-div" style="display: none;"></div>
