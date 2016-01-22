@@ -150,6 +150,8 @@ class ExperimentAnalysisController {
         def expid = params.id
         def expaccession = params.accession
 
+        log.trace("(next line)\nExperimentAnalysisController: expDetail: id = " + expid + ", accession = " +  expaccession)
+
         def exp
         if (expid) {
             exp = Experiment.get(expid)
@@ -157,14 +159,16 @@ class ExperimentAnalysisController {
             exp = Experiment.findByAccession(expaccession)
         }
         log.info "exp.id = " + exp.id
+        // what if exp.id is null or exp is null?
         def platforms = experimentAnalysisQueryService.getPlatformsForExperment(exp.id);
+        log.info("After getPlatformsForExperment")
         def organisms = new HashSet()
         for (pf in platforms) {
             organisms.add(pf.organism)
         }
-
+        log.info("After organisms")
         def formLayout = formLayoutService.getLayout('study');
-
+        log.info("After formLayout")
         def parent = FmFolderAssociation.findByObjectUid(expid)
 
         log.info "Parent = " + parent
