@@ -9,11 +9,12 @@
 class FormLayoutService {
 
     def getLayout(String key) {
-
+        log.info("FormLayoutService: getLayout - " + key)
         def columns = FormLayout.createCriteria().list() {
             eq('key', key)
             order('sequence', 'asc')
         }
+        log.info("FormLayoutService: getLayout - returns: " + columns)
         return columns
     }
 
