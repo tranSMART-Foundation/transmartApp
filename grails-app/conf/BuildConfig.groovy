@@ -18,6 +18,8 @@ grails.project.fork = [
         console: forkSettingsOther]
 
 grails.project.war.file = "target/${appName}.war"
+// grails.plugin.location.'rdc-rmodules' = '../Rmodules'
+grails.plugin.location.'transmart-gwas' = '../transmart-gwas-plugin'
 
 /* we need at least servlet-api 2.4 because of HttpServletResponse::setCharacterEncoding */
 grails.servlet.version = "2.5"
