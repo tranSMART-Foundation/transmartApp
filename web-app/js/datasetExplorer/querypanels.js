@@ -660,7 +660,9 @@ function getSubsetQuerySummary(subset) {
             else if (_item.trim() != '')
                 _item += " NOR"
 
-            _item += " " + _e.find("tooltip").html()
+            var _conceptName = getConceptFromPath(_e.find("item_key").html())
+            _item += " " + _conceptName
+            console.log(_e)
 
             if (_e.find("constrain_by_value").size()) {
                 _item += " CONSTRAINED"
@@ -685,6 +687,12 @@ function getSubsetQuerySummary(subset) {
  * @returns {string}
  */
 function getQuerySummary(subset) { return getSubsetQuerySummary(subset) }
+
+function getConceptFromPath(path) {
+    var pathArr = path.split("\\")
+    console.log(pathArr)
+    return pathArr[pathArr.length - 2]
+}
 
 /**
  * This exclusively encode squared brackets as legacy code describe
