@@ -660,7 +660,7 @@ function getSubsetQuerySummary(subset) {
             else if (_item.trim() != '')
                 _item += " NOR"
 
-            _item += " " + _e.find("item_key").html().substr(1)
+            _item += " " + _e.find("item_key").html().replace("\\\\Private Studies", "").replace("\\\\xtrials", "");
 
             if (_e.find("constrain_by_value").size()) {
                 _item += " CONSTRAINED"
