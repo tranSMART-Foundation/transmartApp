@@ -116,6 +116,7 @@ modules = {
         resource url: 'css/datasetExplorer.css'
         resource url: 'css/querypanels.css'
         resource url: 'css/sanofi.css'
+        resource url: 'css/bootstrap/css/bootstrap.min.css'
     }
 
     uploadDataTab {
