@@ -119,8 +119,13 @@ table.menuDetail th.menuVisited {
 
 #search-ac {
     padding: 2px;
-    height: 14px;
+    height: 20px;
     width: 160px;
+}
+
+.search-terms-icon {
+	font-size: 14px;
+	margin-right: 5px
 }
 
 .ui-autocomplete .ui-menu-item a {
