@@ -29,9 +29,11 @@
             <g:render template="/chart/valueComparison" model="${[subsets: subsets, prefix: 'age']}"/>
         </td>
     </tr>
+    <tr><td colspan="2"><hr/></td></tr>
     <tr>
         <g:render template="/chart/subsetCharts" model="${[subsets: subsets, prefix: 'sex']}"/>
     </tr>
+    <tr><td colspan="2"><hr/></td></tr>
     <tr>
         <g:render template="/chart/subsetCharts" model="${[subsets: subsets, prefix: 'race']}"/>
     </tr>

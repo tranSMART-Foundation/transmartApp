@@ -9,6 +9,8 @@ import org.jfree.chart.axis.ValueAxis
 import org.jfree.chart.entity.StandardEntityCollection
 import org.jfree.chart.labels.BoxAndWhiskerToolTipGenerator
 import org.jfree.chart.plot.CategoryPlot
+import org.jfree.chart.plot.PiePlot
+import org.jfree.chart.plot.PieLabelLinkStyle
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.plot.XYPlot
 import org.jfree.chart.renderer.category.*
@@ -373,6 +375,11 @@ class ChartService {
         // We retrieve the dimension if provided
         def width = size?.width ?: 300
         def height = size?.height ?: 300
+		
+		if (type == 'pie') {
+			width = 400;
+			height = 400;
+		}
 
         // If no data is being sent we return an empty string
         if (data.isEmpty()) return ''
@@ -556,14 +563,17 @@ class ChartService {
 
                 chart.title.font.size = 13
                 chart.title.padding = new RectangleInsets(30, 0, 0, 0)
-                chart.plot.labelBackgroundPaint = new Color(230, 230, 230)
-                chart.plot.labelOutlinePaint = new Color(130, 130, 130)
-                chart.plot.labelShadowPaint = transparent
-                chart.plot.labelPadding = new RectangleInsets(5, 5, 5, 5)
-                chart.plot.maximumLabelWidth = 0.2
-                chart.plot.shadowPaint = transparent
-                chart.plot.interiorGap = 0
-
+				
+				PiePlot plot = (PiePlot) chart.getPlot();
+				plot.setLabelBackgroundPaint(null);
+				plot.setLabelOutlinePaint(null);
+				plot.setLabelShadowPaint(null);
+				plot.setMaximumLabelWidth(0.25);
+				plot.setShadowPaint(transparent);
+				plot.setInteriorGap(0.25);
+				plot.setLabelLinkStyle(PieLabelLinkStyle.STANDARD);
+				
+				
                 data.eachWithIndex { o, i ->
                     if(o.key){
                         chart.plot.setSectionPaint(o.key, new Color(213, 18, 42, (255 / (data.size() + 1) * (data.size() - i)).toInteger()))
