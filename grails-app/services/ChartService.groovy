@@ -313,7 +313,7 @@ class ChartService {
 
                 // Getting the concept data
                 p.conceptData = i2b2HelperService.getConceptDistributionDataForConcept(concept, p.instance, user)
-                p.conceptBar = getSVGChart(type: 'bar', data: p.conceptData, size: [width: 400, height: p.conceptData.size() * 15 + 80], ylabel: "Count", xlabel: "Concept")
+                p.conceptBar = getSVGChart(type: 'bar', data: p.conceptData, size: [width: 500, height: p.conceptData.size() * 22 + 90], ylabel: "Count", xlabel: "Concept")
             }
 
             // Let's calculate the χ² test if possible
@@ -573,7 +573,6 @@ class ChartService {
 				plot.setInteriorGap(0.25);
 				plot.setLabelLinkStyle(PieLabelLinkStyle.STANDARD);
 				
-				
                 data.eachWithIndex { o, i ->
                     if(o.key){
                         chart.plot.setSectionPaint(o.key, new Color(213, 18, 42, (255 / (data.size() + 1) * (data.size() - i)).toInteger()))
@@ -599,9 +598,14 @@ class ChartService {
                 chart = ChartFactory.createBarChart(title, xlabel, ylabel, set, PlotOrientation.HORIZONTAL, false, true, false)
                 chart.setChartParameters();
 
-                chart.getCategoryPlot().setRangeAxisLocation(AxisLocation.BOTTOM_OR_RIGHT)
-                chart.plot.renderer.setSeriesPaint(0, new Color(128, 193, 119))
-                chart.plot.renderer.setSeriesOutlinePaint(0, new Color(84, 151, 12))
+                def categoryPlot = chart.getCategoryPlot()
+                categoryPlot.setRangeAxisLocation(AxisLocation.BOTTOM_OR_RIGHT)
+                categoryPlot.renderer.setSeriesPaint(0, new Color(128, 193, 119))
+                categoryPlot.renderer.setSeriesOutlinePaint(0, new Color(84, 151, 12))
+				CategoryAxis axis = new CategoryAxis();
+				axis.setMaximumCategoryLabelLines(2);
+				axis.configure();
+				categoryPlot.setDomainAxis(axis);
 
                 break;
         }
