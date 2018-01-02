@@ -57,7 +57,7 @@ ui {
         sampleExplorer.hide = true
         geneSignature.hide = false
         gwas.hide = false
-        uploadData.hide = false
+        uploadData.hide = true
         datasetExplorer {
             gridView.hide = true
             dataExport.hide = true
