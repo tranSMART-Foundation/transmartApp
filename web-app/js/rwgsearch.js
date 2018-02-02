@@ -499,7 +499,6 @@ function clearSearch()	{
 	
 	// Change the category picker back to ALL and set autocomplete to not have a category (ALL by default)
 	document.getElementById("search-categories").selectedIndex = 0;
-	$j('#search-ac').autocomplete('option', 'source', sourceURL);
 
 	showSearchTemplate();
 	showSearchResults(); //reload the full search results
