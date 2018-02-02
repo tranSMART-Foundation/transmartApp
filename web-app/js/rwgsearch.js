@@ -20,11 +20,11 @@ var $j = jQuery.noConflict();
 
 // Method to add the categories for the select box
 function addSelectCategories()	{
-	
+
 	if (sessionSearchCategory == "") { sessionSearchCategory = "ALL"; }
-	
+
 	$j("#search-categories").append($j("<option></option>").attr("value", "ALL").text("All").attr('id', 'allCategory'));
-	
+
 	$j("#search-categories").change(function() {
 		$j('#search-ac').autocomplete('option', 'source', sourceURL + "?category=" + this.options[this.selectedIndex].value);
 		$j.ajax({
@@ -32,25 +32,23 @@ function addSelectCategories()	{
 			data: {id: $j("#search-categories").val()}
 		});
 	});
-	
+
 	$j.getJSON(getCategoriesURL, function(json) {
 		for (var i=0; i<json.length; i++)	{
 			var category = json[i].category;
 			var catText = convertCategory(category);
 			$j("#search-categories").append($j("<option></option>").attr("value", category).text(catText));
 		}
-		
+
 		$j("#search-categories").html($j("option", $j("#search-categories")).sort(function(a, b) {
 	        return a.text == b.text ? 0 : a.text < b.text ? -1 : 1;
 	    }));
-		
-		$j("#allCategory").after($j("<option></option>").attr("value", "text").text("Free Text"));
-		
-		$j("#search-categories").val(sessionSearchCategory);
-		$j('#search-ac').autocomplete('option', 'source', sourceURL + "?category=" + $j('#search-categories').val());
 
+		$j("#allCategory").after($j("<option></option>").attr("value", "text").text("Free Text"));
+
+		$j("#search-categories").val(sessionSearchCategory);
     });
-	
+
 }
 
 function addFilterCategories() {
