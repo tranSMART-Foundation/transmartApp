@@ -56,7 +56,7 @@ ui {
         //Note: analyze tab is always shown
         sampleExplorer.hide = true
         geneSignature.hide = false
-        gwas.hide = false
+        gwas.hide = true
         uploadData.hide = true
         datasetExplorer {
             gridView.hide = true
