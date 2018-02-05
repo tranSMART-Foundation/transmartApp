@@ -505,9 +505,11 @@ class ChartService {
                 // adjust the default coloring scheme
                 if (set.getRowCount()>0 && set.getRowKey(0) ==~ /.* 2/) {
                     chart.plot.renderer.setSeriesPaint(0, subset2SeriesColor)
-                    chart.plot.renderer.setSeriesOutlinePaint(0, subset2SeriesOutlineColor)
                 }
                 chart.plot.renderer.maximumBarWidth = 0.09
+                chart.plot.renderer.setSeriesOutlinePaint(0, Color.BLACK)
+                chart.plot.renderer.setSeriesOutlinePaint(1, Color.BLACK)
+                chart.plot.renderer.setUseOutlinePaintForWhiskers(true)
 
                 break;
 
