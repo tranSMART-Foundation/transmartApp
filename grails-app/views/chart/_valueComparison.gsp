@@ -8,11 +8,11 @@
             ${subsets?.commons?."${prefix}Histo" ?: ''}
         </td>
         <td align="center">
-          		<div style="width: 250px;">
+          <div style="width: 250px;">
 	        <g:each in="${subsets}" var="s" status="index">
 	            <g:set var="p" value="${s?.value}"/>
 	            <g:if test="${p?.exists}">
-	            	<div style="width: 110px; float: left;">
+	            	<div style="width: 125px; float: left;">
 	                    <div class="smalltitle">
 	                        <b>
 	                            Subset ${s.key}
