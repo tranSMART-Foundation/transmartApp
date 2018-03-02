@@ -3,6 +3,7 @@ import com.recomdata.export.*
 import grails.util.Holders
 import groovy.sql.Sql
 import i2b2.*
+import org.apache.commons.lang.StringUtils
 import org.transmart.CohortInformation
 import org.transmart.searchapp.AuthUser
 import org.transmart.searchapp.AuthUserSecureAccess
@@ -1818,26 +1819,21 @@ class I2b2HelperService {
      * Gets a comma delimited list of subjects for a result instance id
      */
     def String getSubjects(String resultInstanceId) {
-        checkQueryResultAccess resultInstanceId
-
         if (resultInstanceId == null) {
             return null;
         }
-        StringBuilder subjectIds = new StringBuilder();
         Sql sql = new Sql(dataSource)
 
         String sqlt = """select distinct patient_num from qt_patient_set_collection where result_instance_id = ? 
 		AND patient_num IN (select patient_num from patient_dimension where sourcesystem_cd not like '%:S:%')""";
         log.trace("before sql call")
+
+        def ids = []
+
         sql.eachRow(sqlt, [resultInstanceId], { row ->
-            log.trace("in iterator")
-            if (subjectIds.length() > 0) {
-                subjectIds.append(",");
-            }
-            subjectIds.append(row.PATIENT_NUM);
+            ids.add(row.PATIENT_NUM)
         })
-        log.trace("before return")
-        return subjectIds.toString();
+        return StringUtils.join(ids, ",")
     }
 
     /**
