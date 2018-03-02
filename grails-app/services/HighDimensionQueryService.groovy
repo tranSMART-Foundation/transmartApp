@@ -2,6 +2,8 @@ import com.recomdata.export.ExportColumn
 import com.recomdata.export.ExportRowNew
 import com.recomdata.export.ExportTableNew
 import groovy.sql.Sql
+import org.apache.commons.io.IOUtils
+import java.io.Reader
 import org.transmartproject.core.exceptions.InvalidRequestException
 import org.transmartproject.core.querytool.ConstraintByOmicsValue
 
@@ -40,7 +42,12 @@ class HighDimensionQueryService {
         sql.eachRow(sqlt, [resultInstanceId], { row ->
             def xml
             try {
-                xml = new XmlSlurper().parse(new StringReader(row.request_xml))
+                def clobObject = row.request_xml
+                Reader stream = clobObject.getCharacterStream()
+                StringWriter w = new StringWriter()
+                IOUtils.copy(stream, w)
+                String clobAsString = w.toString()
+                xml = new XmlSlurper().parseText(clobAsString)
             } catch (exception) {
                 throw new InvalidRequestException('Malformed XML document: ' +
                         exception.message, exception)
