@@ -23,9 +23,10 @@ class ClinicalExportService {
     def ontologyTermTagsResourceService
     def conceptsResourceService
 
+    RowComposerService rowComposerService
+
     final static String DATA_FILE_NAME = 'data_clinical.tsv'
     final static String META_FILE_NAME = 'meta.tsv'
-    final static String SUBJ_ID_TITLE = 'Subject ID'
     final static char COLUMN_SEPARATOR = '\t' as char
     final static List<String> META_FILE_HEADER = ['Variable', 'Attribute', 'Description']
 
@@ -85,16 +86,12 @@ class ClinicalExportService {
                              File studyDir,
                              String jobName) {
         PeekingIterator peekingIterator = Iterators.peekingIterator(tabularResult.iterator())
-
+        ComposedVariablesPatientRowComposer rowComposer = rowComposerService.build(variables)
         File clinicalDataFile = new File(studyDir, DATA_FILE_NAME)
         clinicalDataFile.withWriter { Writer writer ->
             CSVWriter csvWriter = new CSVWriter(writer, COLUMN_SEPARATOR)
 
-            def firstRow = peekingIterator.peek()
-            List headRowList = [SUBJ_ID_TITLE] +
-                    variables.collectMany { ComposedVariable var ->
-                        firstRow[var].collect { it.key.label }
-                    }
+            List headRowList = rowComposer.composeHeader(peekingIterator.peek())
 
             csvWriter.writeNext(headRowList as String[])
 
@@ -102,11 +99,7 @@ class ClinicalExportService {
                 if (jobResultsService.isJobCancelled(jobName)) {
                     return null
                 }
-                def row = peekingIterator.next()
-                List rowList = [row.patient.inTrialId] +
-                        variables.collectMany { ComposedVariable var ->
-                            row[var].values()
-                        }
+                List rowList = rowComposer.composeRow(peekingIterator.next())
 
                 csvWriter.writeNext(rowList as String[])
             }
