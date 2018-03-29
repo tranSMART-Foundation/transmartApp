@@ -59,8 +59,6 @@ Ext.ux.OntologyTreeLoader = Ext.extend(Ext.tree.TreeLoader, {
 
     parseJson: function (response, node) {
         // shorthand
-        var Tree = Ext.tree;
-
         var concepts = Ext.decode(response.responseText);
 
         var matchList = GLOBAL.PathToExpand.split(",");
