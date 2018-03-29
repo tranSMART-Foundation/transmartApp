@@ -1995,19 +1995,11 @@ function updateAnalysisPanel(html, insert) {
 
 function searchByNameComplete(response) {
     // shorthand
-    var length;
-    var Tree = Ext.tree;
     searchByNameTree.el.unmask();
     var allkeys="";
     var concepts = response.responseXML.selectNodes('//concept');
     if (concepts !== undefined) {
-        if (concepts.length < GLOBAL.MaxSearchResults) {
-            length = concepts.length;
-        } else {
-            length = GLOBAL.MaxSearchResults;
-        }
-
-        for (var c = 0; c < length; c++) {
+        for (var c = 0; c < concepts.length; c++) {
             searchByNameTreeRoot.appendChild(getTreeNodeFromXMLNode(concepts[c]));
             var key=concepts[c].selectSingleNode('key').firstChild.nodeValue;
             if (allkeys !== "") {
@@ -3120,16 +3112,11 @@ function searchByTagBefore() {
 
 function searchByTagComplete(response) {
     // shorthand
-    var Tree = Ext.tree;
     var treeRoot = Ext.getCmp('navigateTermsPanel').getRootNode();
 
     viewport.el.unmask();
     var concepts = response.searchResults; //Response is an array of concept paths
     var uniqueLeaves = response.uniqueLeaves;
-
-    var length;
-    var leaf = false;
-    var draggable = false;
 
     for (c = treeRoot.childNodes.length - 1; c >= 0; c--) {
         treeRoot.childNodes[c].remove();
@@ -3146,12 +3133,7 @@ function searchByTagComplete(response) {
     }
 
     if (concepts !== undefined) {
-        if (concepts.length < GLOBAL.MaxSearchResults) {
-            length = concepts.length;
-        } else {
-            length = GLOBAL.MaxSearchResults;
-        }
-        for (var c = 0; c < length; c++) {
+        for (var c = 0; c < concepts.length; c++) {
             GLOBAL.PathToExpand += concepts[c] + ",";
         }
 
