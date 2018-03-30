@@ -50,14 +50,15 @@ Ext.ux.OntologyTreeLoader = Ext.extend(Ext.tree.TreeLoader, {
         getChildConceptPatientCounts(node);
         node.endUpdate();
         if (typeof callback == "function") {
-            callback(this, node);
+            //To do not fail when search criteria has changed in between.
+            if (node.getOwnerTree()) {
+                callback(this, node);
+            }
         }
     },
 
     parseJson: function (response, node) {
         // shorthand
-        var Tree = Ext.tree;
-
         var concepts = Ext.decode(response.responseText);
 
         var matchList = GLOBAL.PathToExpand.split(",");
