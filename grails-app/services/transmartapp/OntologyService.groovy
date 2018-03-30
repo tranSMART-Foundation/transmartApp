@@ -56,12 +56,12 @@ class OntologyService {
             log.debug(nodeQuery)
 
             myCount = i2b2.OntNode.executeQuery(countQuery)[0]
-            myNodes = i2b2.OntNode.executeQuery(nodeQuery, [max: 100])
+            myNodes = i2b2.OntNode.executeQuery(nodeQuery)
 
         } else {
 
             def cdQuery = "SELECT DISTINCT o.sourcesystemcd FROM i2b2.OntNode o JOIN o.tags t WHERE t.tag IN (:tagArg) AND t.tagtype =:tagTypeArg"
-            allSystemCds = i2b2.OntNode.executeQuery(cdQuery, [tagArg: searchtags, tagTypeArg: tagsearchtype], [max: 800])
+            allSystemCds = i2b2.OntNode.executeQuery(cdQuery, [tagArg: searchtags, tagTypeArg: tagsearchtype])
 
             def countQuery = "SELECT COUNT(DISTINCT o.id) from i2b2.OntNode o WHERE o.sourcesystemcd IN (:scdArg) AND (_searchterms_) AND o.visualattributes NOT like '" + visualAttrHiddenWild + "'"
             countQuery = countQuery.replace("_searchterms_", searchtermstring)
@@ -69,7 +69,7 @@ class OntologyService {
 
             def nodeQuery = "SELECT o from i2b2.OntNode o WHERE o.sourcesystemcd IN (:scdArg) AND (_searchterms_) AND o.visualattributes NOT like '" + visualAttrHiddenWild + "'"
             nodeQuery = nodeQuery.replace("_searchterms_", searchtermstring)
-            myNodes = i2b2.OntNode.executeQuery(nodeQuery, [scdArg: allSystemCds], [max: 100])
+            myNodes = i2b2.OntNode.executeQuery(nodeQuery, [scdArg: allSystemCds])
         }
         //}
 
