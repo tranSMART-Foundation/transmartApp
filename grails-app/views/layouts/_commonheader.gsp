@@ -11,8 +11,8 @@
         <th class="menuBar" style="width: 20px">&nbsp;</th>
         <th class="menuBar" style="width: 150px"><g:if test="${'rwg' == app || 'datasetExplorer' == app}"><select
                 id="search-categories"></select></g:if></th>
-        <th class="menuBar" style="width: 190px"><g:if test="${'rwg' == app || 'datasetExplorer' == app}"><input
-                id="search-ac"/></g:if></th>
+        <th class="menuBar" style="width: 190px"><g:if test="${'rwg' == app || 'datasetExplorer' == app}"><i class="fa fa-search" id="search-terms-icon" aria-hidden="true"/><input
+                id="search-ac" placeholder="Search..."/></g:if></th>
         <th class="menuBar" style="width: 110px">
             <g:if test="${'rwg' == app}">
                 <div id="cartbutton" class="greybutton">

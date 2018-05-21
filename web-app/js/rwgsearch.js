@@ -20,11 +20,11 @@ var $j = jQuery.noConflict();
 
 // Method to add the categories for the select box
 function addSelectCategories()	{
-	
+
 	if (sessionSearchCategory == "") { sessionSearchCategory = "ALL"; }
-	
+
 	$j("#search-categories").append($j("<option></option>").attr("value", "ALL").text("All").attr('id', 'allCategory'));
-	
+
 	$j("#search-categories").change(function() {
 		$j('#search-ac').autocomplete('option', 'source', sourceURL + "?category=" + this.options[this.selectedIndex].value);
 		$j.ajax({
@@ -32,25 +32,23 @@ function addSelectCategories()	{
 			data: {id: $j("#search-categories").val()}
 		});
 	});
-	
+
 	$j.getJSON(getCategoriesURL, function(json) {
 		for (var i=0; i<json.length; i++)	{
 			var category = json[i].category;
 			var catText = convertCategory(category);
 			$j("#search-categories").append($j("<option></option>").attr("value", category).text(catText));
 		}
-		
+
 		$j("#search-categories").html($j("option", $j("#search-categories")).sort(function(a, b) {
 	        return a.text == b.text ? 0 : a.text < b.text ? -1 : 1;
 	    }));
-		
-		$j("#allCategory").after($j("<option></option>").attr("value", "text").text("Free Text"));
-		
-		$j("#search-categories").val(sessionSearchCategory);
-		$j('#search-ac').autocomplete('option', 'source', sourceURL + "?category=" + $j('#search-categories').val());
 
+		$j("#allCategory").after($j("<option></option>").attr("value", "text").text("Free Text"));
+
+		$j("#search-categories").val(sessionSearchCategory);
     });
-	
+
 }
 
 function addFilterCategories() {
@@ -85,41 +83,8 @@ function addFilterCategories() {
 
 //Method to add the autocomplete for the search keywords
 function addSearchAutoComplete()	{
-	$j("#search-ac").autocomplete({
-		position:{my:"left top",at:"left bottom",collision:"none"},
-		source: sourceURL,
-		minLength:1,
-		select: function(event, ui) {  
-		    if (ui.item != null && ui.item != "") {
-			searchParam={id:ui.item.id,display:ui.item.category,keyword:ui.item.label,category:ui.item.categoryId};
-			addSearchTerm(searchParam);
-		    }
 
-			//If category is ALL, add this as free text as well
-			var category = $j("#search-categories").val();
-		    return false;
-		}
-	}).data("ui-autocomplete")._renderItem = function( ul, item ) {
-		var resulta = '<a><span class="category-' + item.category.toLowerCase() + '">' + item.category + '&gt;</span>&nbsp;<b>' + item.label + '</b>&nbsp;';
-		if (item.synonyms != null) {
-			resulta += (item.synonyms + '</a>');
-		}
-		else {
-			resulta += '</a>';
-		}
-		
-		return $j('<li></li>')
-		  .data("item.autocomplete", item )
-		  .append(resulta)
-		  .appendTo(ul);
-	};	
-		
-	// Capture the enter key on the slider and fire off the search event on the autocomplete
-	$j("#search-categories").keypress(function(event)	{
-		if (event.which == 13)	{
-			$j("#search-ac").autocomplete('search');
-		}
-	});
+	//Autocomplete code removed. The below portion was left in because it submits the search on enter.
 	
 	$j('#search-ac').keypress(function(event) {
 		var category = $j("#search-categories").val();
@@ -534,7 +499,6 @@ function clearSearch()	{
 	
 	// Change the category picker back to ALL and set autocomplete to not have a category (ALL by default)
 	document.getElementById("search-categories").selectedIndex = 0;
-	$j('#search-ac').autocomplete('option', 'source', sourceURL);
 
 	showSearchTemplate();
 	showSearchResults(); //reload the full search results

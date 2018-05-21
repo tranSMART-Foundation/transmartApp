@@ -121,6 +121,11 @@ table.menuDetail th.menuVisited {
     padding: 2px;
     height: 14px;
     width: 160px;
+	margin-left: 5px;
+}
+
+#search-terms-icon {
+	font-size: 14px;
 }
 
 .ui-autocomplete .ui-menu-item a {

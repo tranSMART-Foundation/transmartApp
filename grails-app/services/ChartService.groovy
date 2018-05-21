@@ -2,12 +2,15 @@ import org.apache.commons.math.stat.inference.TestUtils
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartRenderingInfo
 import org.jfree.chart.JFreeChart
+import org.jfree.chart.axis.AxisLocation
 import org.jfree.chart.axis.CategoryAxis
 import org.jfree.chart.axis.NumberAxis
 import org.jfree.chart.axis.ValueAxis
 import org.jfree.chart.entity.StandardEntityCollection
 import org.jfree.chart.labels.BoxAndWhiskerToolTipGenerator
 import org.jfree.chart.plot.CategoryPlot
+import org.jfree.chart.plot.PiePlot
+import org.jfree.chart.plot.PieLabelLinkStyle
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.plot.XYPlot
 import org.jfree.chart.renderer.category.*
@@ -19,8 +22,9 @@ import org.jfree.data.general.Dataset
 import org.jfree.data.general.DefaultPieDataset
 import org.jfree.data.statistics.*
 import org.jfree.graphics2d.svg.SVGGraphics2D
-import org.jfree.ui.RectangleInsets
+import org.jfree.chart.ui.RectangleInsets
 import org.jfree.util.ShapeUtilities
+import org.transmart.searchapp.AuthUser
 import org.transmartproject.core.dataquery.highdim.projections.Projection
 import org.transmartproject.core.exceptions.EmptySetException
 import org.transmartproject.core.querytool.ConstraintByOmicsValue
@@ -36,6 +40,7 @@ class ChartService {
     def i2b2HelperService
     def highDimensionQueryService
     def highDimensionResourceService
+    def springSecurityService
     def public keyCache = []
 
     def getSubsetsFromRequest(params) {
@@ -43,7 +48,7 @@ class ChartService {
         // We retrieve the result instance ids from the client
         def result_instance_id1 = params.result_instance_id1 ?: null;
         def result_instance_id2 = params.result_instance_id2 ?: null;
-
+		
         // We create our subset reference Map
         [
             1: [ exists: !(result_instance_id1 == null || result_instance_id1 == ""), instance: result_instance_id1],
@@ -83,11 +88,12 @@ class ChartService {
             // First we get the Query Definition
             i2b2HelperService.renderQueryDefinition(p.instance, "Query Summary for Subset ${n}", writer)
             p.query = output.toStringAndFlush()
+            def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
 
             // Let's fetch the patient count
-            p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
+            p.patientCount = i2b2HelperService.getPatientSetSize(p.instance, user)
             // Getting the age data
-            p.ageData = i2b2HelperService.getPatientDemographicValueDataForSubset("AGE_IN_YEARS_NUM", p.instance).toList()
+            p.ageData = i2b2HelperService.getPatientDemographicValueDataForSubset("AGE_IN_YEARS_NUM", p.instance, user).toList()
             if (p.ageData) {
                 p.ageStats = BoxAndWhiskerCalculator.calculateBoxAndWhiskerStatistics(p.ageData)
                 ageHistogramHandle["Subset $n"] = p.ageData
@@ -97,20 +103,20 @@ class ChartService {
             def moveKeyToEndOfMap = { map,key -> if (map.containsKey(key)) {def v=map[key];map.remove(key);map[key]=v} }
 
             // Sex chart has to be generated for each subset
-            p.sexData = i2b2HelperService.getPatientDemographicDataForSubset("sex_cd", p.instance)
+            p.sexData = i2b2HelperService.getPatientDemographicDataForSubset("sex_cd", p.instance, user)
             moveKeyToEndOfMap(p.sexData,'')
             p.sexPie = getSVGChart(type: 'pie', data: p.sexData, title: "Sex")
 
             // Same thing for Race chart
-            p.raceData = i2b2HelperService.getPatientDemographicDataForSubset("race_cd", p.instance)
+            p.raceData = i2b2HelperService.getPatientDemographicDataForSubset("race_cd", p.instance, user)
             moveKeyToEndOfMap(p.raceData,'')
             p.racePie = getSVGChart(type: 'pie', data: p.raceData, title: "Race")
 
         }
 
         // Let's build our age diagrams now that we have all the points in
-        subsets.commons.ageHisto = getSVGChart(type: 'histogram', data: ageHistogramHandle, title: "Age")
-        subsets.commons.agePlot = getSVGChart(type: 'boxplot', data: agePlotHandle, title: "Age")
+        subsets.commons.ageHisto = getSVGChart(type: 'histogram', data: ageHistogramHandle, title: "Age Histogram", xlabel: "Age", ylabel: "Count")
+        subsets.commons.agePlot = getSVGChart(type: 'boxplot', data: agePlotHandle, title: "Age Comparison", ylabel: "Age")
 
         subsets
     }
@@ -135,15 +141,19 @@ class ChartService {
 
     def getHighDimensionalConceptsForSubsets(subsets) {
         // We also retrieve all concepts involved in the query
-        def concepts = [:]
-        highDimensionQueryService.getHighDimensionalConceptSet(subsets[1].instance, subsets[2].instance).findAll() {
+        def theseConcepts = [:]
+		def highDimensionalConceptSet = highDimensionQueryService.getHighDimensionalConceptSet(subsets[1].instance, subsets[2].instance)
+        highDimensionalConceptSet.findAll() {
             it.concept_key.indexOf("SECURITY") <= -1
         }.each {
             def key = it.concept_key + it.omics_selector + " - " + it.omics_projection_type
-            if (!concepts.containsKey(key))
-              concepts[key] = getConceptAnalysis(concept: it.concept_key, subsets: subsets, omics_params: it)
+            if (!theseConcepts.containsKey(key) )
+				if (i2b2HelperService.isHighDimensionalConceptKey(it.concept_key)) {
+					theseConcepts[key] = getConceptAnalysis(concept: it.concept_key, subsets: subsets, omics_params: it)
+				}
         }
-        concepts
+		
+        theseConcepts
     }
 
     def getConceptAnalysis (Map args) {
@@ -151,6 +161,8 @@ class ChartService {
         def subsets = args.subsets ?: null
         def concept = args.concept ?: null
         def chartSize = args.chartSize ?: null
+
+        def user = AuthUser.findByUsername(springSecurityService.getPrincipal().username)
 
         // We create our result holder and initiate it from subsets
         def result = [:]
@@ -165,6 +177,7 @@ class ChartService {
         result.commons.conceptKey = concept.substring(concept.substring(3).indexOf('\\') + 3)
         result.commons.conceptName = i2b2HelperService.getShortNameFromKey(concept);
         result.commons.conceptPath = concept
+        result.commons.conceptShortName = i2b2HelperService.getColumnNameFromKey(concept)
         result.commons.omics_params = args.omics_params ?: null
 
         if (i2b2HelperService.isValueConceptCode(result.commons.conceptCode)) {
@@ -180,7 +193,7 @@ class ChartService {
             }.each { n, p ->
 
                 if (p.instance != "")
-                    p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
+                    p.patientCount = i2b2HelperService.getPatientSetSize(p.instance, user)
                 else
                     p.patientCount = i2b2HelperService.getPatientCountForConcept(concept)
 
@@ -192,29 +205,29 @@ class ChartService {
             }
 
             // Let's build our concept diagrams now that we have all the points in
-            result.commons.conceptHisto = getSVGChart(type: 'histogram', data: conceptHistogramHandle, size: chartSize)
-            result.commons.conceptPlot = getSVGChart(type: 'boxplot', data: conceptPlotHandle, size: chartSize)
+            result.commons.conceptHisto = getSVGChart(type: 'histogram', data: conceptHistogramHandle, size: chartSize, ylabel: "Count", xlabel: result.commons.conceptShortName)
+            result.commons.conceptPlot = getSVGChart(type: 'boxplot', data: conceptPlotHandle, size: chartSize, ylabel: result.commons.conceptShortName)
 
             // Lets calculate the T test if possible
             if (result[1].exists && result[2].exists) {
 
                 if (result[1].conceptData.toArray() == result[2].conceptData.toArray())
-                    result.commons.testmessage = 'No T-test calculated: these are the same subsets'
+                    result.commons.testmessage = 'No t-test calculated: these are the same subsets'
                 else if (result[1].conceptData.size() < 2 || result[2].conceptData.size() < 2)
-                    result.commons.testmessage = 'No T-test calculated: not enough data'
+                    result.commons.testmessage = 'No t-test calculated: not enough data'
                 else {
 
                     def double [] o = (double[])result[1].conceptData.toArray()
                     def double [] t = (double[])result[2].conceptData.toArray()
 
                     result.commons.tstat = TestUtils.t(o, t).round(5)
-                    result.commons.pvalue = TestUtils.tTest(o, t).round(5)
+                    result.commons.pvalue = String.format("%1.3e", TestUtils.tTest(o, t))
                     result.commons.significance = TestUtils.tTest(o, t, 0.05)
 
                     if (result.commons.significance)
-                        result.commons.testmessage = 'T-test demonstrated results are significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are significant at a 95% confidence level'
                     else
-                        result.commons.testmessage = 'T-test demonstrated results are <b>not</b> significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are <b>not</b> significant at a 95% confidence level'
 
                 }
             }
@@ -249,7 +262,7 @@ class ChartService {
                 }
 
                 if (p.instance != "")
-                    p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
+                    p.patientCount = i2b2HelperService.getPatientSetSize(p.instance, user)
                 else
                     p.patientCount = i2b2HelperService.getPatientCountForConcept(concept)
 
@@ -268,22 +281,22 @@ class ChartService {
             if (result[1].exists && result[2].exists) {
 
                 if (result[1].conceptData.toArray() == result[2].conceptData.toArray())
-                    result.commons.testmessage = 'No T-test calculated: these are the same subsets'
+                    result.commons.testmessage = 'No t-test calculated: these are the same subsets'
                 else if (result[1].conceptData.size() < 2 || result[2].conceptData.size() < 2)
-                    result.commons.testmessage = 'No T-test calculated: not enough data'
+                    result.commons.testmessage = 'No t-test calculated: not enough data'
                 else {
 
                     def double [] o = (double[])result[1].conceptData.toArray()
                     def double [] t = (double[])result[2].conceptData.toArray()
 
                     result.commons.tstat = TestUtils.t(o, t).round(5)
-                    result.commons.pvalue = TestUtils.tTest(o, t).round(5)
+                    result.commons.pvalue = String.format("%1.3e", TestUtils.tTest(o, t))
                     result.commons.significance = TestUtils.tTest(o, t, 0.05)
 
                     if (result.commons.significance)
-                        result.commons.testmessage = 'T-test demonstrated results are significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are significant at a 95% confidence level'
                     else
-                        result.commons.testmessage = 'T-test demonstrated results are <b>not</b> significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are <b>not</b> significant at a 95% confidence level'
 
                 }
             }
@@ -298,13 +311,13 @@ class ChartService {
             }.each { n, p ->
 
                 if (p.instance != "")
-                    p.patientCount = i2b2HelperService.getPatientSetSize(p.instance)
+                    p.patientCount = i2b2HelperService.getPatientSetSize(p.instance, user)
                 else
                     p.patientCount = i2b2HelperService.getPatientCountForConcept(concept)
 
                 // Getting the concept data
-                p.conceptData = i2b2HelperService.getConceptDistributionDataForConcept(concept, p.instance)
-                p.conceptBar = getSVGChart(type: 'bar', data: p.conceptData, size: [width: 400, height: p.conceptData.size() * 15 + 80])
+                p.conceptData = i2b2HelperService.getConceptDistributionDataForConcept(concept, p.instance, user)
+                p.conceptBar = getSVGChart(type: 'bar', data: p.conceptData, size: [width: 500, height: p.conceptData.size() * 22 + 90], ylabel: "Count", xlabel: "Concept")
             }
 
             // Let's calculate the χ² test if possible
@@ -329,7 +342,7 @@ class ChartService {
                     def long [][] counts = [result[1].conceptData.values(), result[2].conceptData.values()]
 
                     result.commons.chisquare = TestUtils.chiSquare(counts).round(5)
-                    result.commons.pvalue = TestUtils.chiSquareTest(counts).round(5)
+                    result.commons.pvalue = String.format("%1.3e", TestUtils.chiSquareTest(counts))
                     result.commons.significance = TestUtils.chiSquareTest(counts, 0.05)
 
                     if (result.commons.significance)
@@ -366,6 +379,11 @@ class ChartService {
         // We retrieve the dimension if provided
         def width = size?.width ?: 300
         def height = size?.height ?: 300
+		
+		if (type == 'pie') {
+			width = 400;
+			height = 400;
+		}
 
         // If no data is being sent we return an empty string
         if (data.isEmpty()) return ''
@@ -394,9 +412,11 @@ class ChartService {
                 plot?.backgroundPaint = transparent
 
                 if (plot instanceof CategoryPlot || plot instanceof XYPlot) {
-
+                    float[] dashArray = [2.0F, 2.0F] as float[]
                     plot?.domainGridlinePaint = Color.LIGHT_GRAY
+                    plot?.domainGridlineStroke = new BasicStroke(1F, 0, 2, 0.0F, dashArray, 0.0F);
                     plot?.rangeGridlinePaint = Color.LIGHT_GRAY
+                    plot?.rangeGridlineStroke = new BasicStroke(1F, 0, 2, 0.0F, dashArray, 0.0F);
                     plot?.renderer?.setSeriesPaint(0, subset1SeriesColor)
                     plot?.renderer?.setSeriesPaint(1, subset2SeriesColor)
                     plot?.renderer?.setSeriesOutlinePaint(0, subset1SeriesOutlineColor)
@@ -450,6 +470,7 @@ class ChartService {
 
                 chart = ChartFactory.createHistogram(title, xlabel, ylabel, set, PlotOrientation.VERTICAL, true, true, false)
                 chart.setChartParameters()
+
                 // If the first series (index 0) is related to 'Subset 2' i.s.o. 'Subset 1'
                 // (e.g. because 'Subset 1' is empty or if no data is avaialable for the given concept)
                 // adjust the default coloring scheme
@@ -457,7 +478,6 @@ class ChartService {
                     chart.plot.renderer.setSeriesPaint(0, subset2SeriesColor)
                     chart.plot.renderer.setSeriesOutlinePaint(0, subset2SeriesOutlineColor)
                 }
-                chart.legend.visible = false
 
                 break;
 
@@ -489,9 +509,11 @@ class ChartService {
                 // adjust the default coloring scheme
                 if (set.getRowCount()>0 && set.getRowKey(0) ==~ /.* 2/) {
                     chart.plot.renderer.setSeriesPaint(0, subset2SeriesColor)
-                    chart.plot.renderer.setSeriesOutlinePaint(0, subset2SeriesOutlineColor)
                 }
                 chart.plot.renderer.maximumBarWidth = 0.09
+                chart.plot.renderer.setSeriesOutlinePaint(0, Color.BLACK)
+                chart.plot.renderer.setSeriesOutlinePaint(1, Color.BLACK)
+                chart.plot.renderer.setUseOutlinePaintForWhiskers(true)
 
                 break;
 
@@ -547,15 +569,16 @@ class ChartService {
 
                 chart.title.font.size = 13
                 chart.title.padding = new RectangleInsets(30, 0, 0, 0)
-                chart.plot.labelBackgroundPaint = new Color(230, 230, 230)
-                chart.plot.labelOutlinePaint = new Color(130, 130, 130)
-                chart.plot.labelShadowPaint = transparent
-                chart.plot.labelPadding = new RectangleInsets(5, 5, 5, 5)
-                chart.plot.maximumLabelWidth = 0.2
-                chart.plot.shadowPaint = transparent
-                chart.plot.interiorGap = 0
-                chart.plot.baseSectionOutlinePaint = new Color(213, 18, 42)
-
+				
+				PiePlot plot = (PiePlot) chart.getPlot();
+				plot.setLabelBackgroundPaint(null);
+				plot.setLabelOutlinePaint(null);
+				plot.setLabelShadowPaint(null);
+				plot.setMaximumLabelWidth(0.25);
+				plot.setShadowPaint(transparent);
+				plot.setInteriorGap(0.25);
+				plot.setLabelLinkStyle(PieLabelLinkStyle.STANDARD);
+				
                 data.eachWithIndex { o, i ->
                     if(o.key){
                         chart.plot.setSectionPaint(o.key, new Color(213, 18, 42, (255 / (data.size() + 1) * (data.size() - i)).toInteger()))
@@ -579,10 +602,16 @@ class ChartService {
                 }
 
                 chart = ChartFactory.createBarChart(title, xlabel, ylabel, set, PlotOrientation.HORIZONTAL, false, true, false)
-                chart.setChartParameters()
+                chart.setChartParameters();
 
-                chart.plot.renderer.setSeriesPaint(0, new Color(128, 193, 119))
-                chart.plot.renderer.setSeriesOutlinePaint(0, new Color(84, 151, 12))
+                def categoryPlot = chart.getCategoryPlot()
+                categoryPlot.setRangeAxisLocation(AxisLocation.BOTTOM_OR_RIGHT)
+                categoryPlot.renderer.setSeriesPaint(0, new Color(128, 193, 119))
+                categoryPlot.renderer.setSeriesOutlinePaint(0, new Color(84, 151, 12))
+				CategoryAxis axis = new CategoryAxis();
+				axis.setMaximumCategoryLabelLines(2);
+				axis.configure();
+				categoryPlot.setDomainAxis(axis);
 
                 break;
         }
