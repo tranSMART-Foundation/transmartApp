@@ -48,7 +48,7 @@ class ChartService {
         // We retrieve the result instance ids from the client
         def result_instance_id1 = params.result_instance_id1 ?: null;
         def result_instance_id2 = params.result_instance_id2 ?: null;
-
+		
         // We create our subset reference Map
         [
             1: [ exists: !(result_instance_id1 == null || result_instance_id1 == ""), instance: result_instance_id1],
@@ -141,15 +141,19 @@ class ChartService {
 
     def getHighDimensionalConceptsForSubsets(subsets) {
         // We also retrieve all concepts involved in the query
-        def concepts = [:]
-        highDimensionQueryService.getHighDimensionalConceptSet(subsets[1].instance, subsets[2].instance).findAll() {
+        def theseConcepts = [:]
+		def highDimensionalConceptSet = highDimensionQueryService.getHighDimensionalConceptSet(subsets[1].instance, subsets[2].instance)
+        highDimensionalConceptSet.findAll() {
             it.concept_key.indexOf("SECURITY") <= -1
         }.each {
             def key = it.concept_key + it.omics_selector + " - " + it.omics_projection_type
-            if (!concepts.containsKey(key))
-              concepts[key] = getConceptAnalysis(concept: it.concept_key, subsets: subsets, omics_params: it)
+            if (!theseConcepts.containsKey(key) )
+				if (i2b2HelperService.isHighDimensionalConceptKey(it.concept_key)) {
+					theseConcepts[key] = getConceptAnalysis(concept: it.concept_key, subsets: subsets, omics_params: it)
+				}
         }
-        concepts
+		
+        theseConcepts
     }
 
     def getConceptAnalysis (Map args) {
