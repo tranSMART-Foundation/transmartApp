@@ -10,6 +10,7 @@ modules = {
         resource url: 'images/searchtool.ico'
         resource url: 'css/main.css'
         resource url: 'css/sanofi.css'
+	resource url: 'css/bootstrap/css/bootstrap.min.css'
     }
 
     session_timeout {
