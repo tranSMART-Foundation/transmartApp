@@ -207,7 +207,7 @@ class ChartService {
                     def double [] t = (double[])result[2].conceptData.toArray()
 
                     result.commons.tstat = TestUtils.t(o, t).round(5)
-                    result.commons.pvalue = TestUtils.tTest(o, t).round(5)
+                    result.commons.pvalue = String.format("%1.3e", TestUtils.tTest(o, t))
                     result.commons.significance = TestUtils.tTest(o, t, 0.05)
 
                     if (result.commons.significance)
@@ -270,7 +270,7 @@ class ChartService {
                     def double [] t = (double[])result[2].conceptData.toArray()
 
                     result.commons.tstat = TestUtils.t(o, t).round(5)
-                    result.commons.pvalue = TestUtils.tTest(o, t).round(5)
+                    result.commons.pvalue = String.format("%1.3e", TestUtils.tTest(o, t))
                     result.commons.significance = TestUtils.tTest(o, t, 0.05)
 
                     if (result.commons.significance)
@@ -322,7 +322,7 @@ class ChartService {
                     def long [][] counts = [result[1].conceptData.values(), result[2].conceptData.values()]
 
                     result.commons.chisquare = TestUtils.chiSquare(counts).round(5)
-                    result.commons.pvalue = TestUtils.chiSquareTest(counts).round(5)
+                    result.commons.pvalue = String.format("%1.3e", TestUtils.chiSquareTest(counts))
                     result.commons.significance = TestUtils.chiSquareTest(counts, 0.05)
 
                     if (result.commons.significance)
