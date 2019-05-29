@@ -198,9 +198,9 @@ class ChartService {
             if (result[1].exists && result[2].exists) {
 
                 if (result[1].conceptData.toArray() == result[2].conceptData.toArray())
-                    result.commons.testmessage = 'No T-test calculated: these are the same subsets'
+                    result.commons.testmessage = 'No t-test calculated: these are the same subsets'
                 else if (result[1].conceptData.size() < 2 || result[2].conceptData.size() < 2)
-                    result.commons.testmessage = 'No T-test calculated: not enough data'
+                    result.commons.testmessage = 'No t-test calculated: not enough data'
                 else {
 
                     def double [] o = (double[])result[1].conceptData.toArray()
@@ -211,9 +211,9 @@ class ChartService {
                     result.commons.significance = TestUtils.tTest(o, t, 0.05)
 
                     if (result.commons.significance)
-                        result.commons.testmessage = 'T-test demonstrated results are significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are significant at a 95% confidence level'
                     else
-                        result.commons.testmessage = 'T-test demonstrated results are <b>not</b> significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are <b>not</b> significant at a 95% confidence level'
 
                 }
             }
@@ -261,9 +261,9 @@ class ChartService {
             if (result[2].exists) {
 
                 if (result[1].conceptData.toArray() == result[2].conceptData.toArray())
-                    result.commons.testmessage = 'No T-test calculated: these are the same subsets'
+                    result.commons.testmessage = 'No t-test calculated: these are the same subsets'
                 else if (result[1].conceptData.size() < 2 || result[2].conceptData.size() < 2)
-                    result.commons.testmessage = 'No T-test calculated: not enough data'
+                    result.commons.testmessage = 'No t-test calculated: not enough data'
                 else {
 
                     def double [] o = (double[])result[1].conceptData.toArray()
@@ -274,9 +274,9 @@ class ChartService {
                     result.commons.significance = TestUtils.tTest(o, t, 0.05)
 
                     if (result.commons.significance)
-                        result.commons.testmessage = 'T-test demonstrated results are significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are significant at a 95% confidence level'
                     else
-                        result.commons.testmessage = 'T-test demonstrated results are <b>not</b> significant at a 95% confidence level'
+                        result.commons.testmessage = 't-test demonstrated results are <b>not</b> significant at a 95% confidence level'
 
                 }
             }
