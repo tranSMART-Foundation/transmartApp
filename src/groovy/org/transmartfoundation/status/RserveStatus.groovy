@@ -1,7 +1,5 @@
 package org.transmartfoundation.status
 
-import java.util.Date;
-
 class RserveStatus {
 
     String url
@@ -14,5 +12,15 @@ class RserveStatus {
     String toString () {
         return "RserveStatus (" + url + ") - probe at: " + lastProbe
     }
+
+    String toHTMLString () {
+        return 'url: '            + url + "</br>" +
+        'connected: '             + connected + "</br>" +
+        'simpleExpressionOK: '    + simpleExpressionOK + "</br>" +
+        'librariesOk: '           + librariesOk + "</br>" +
+        'lastErrorMessage: '      + lastErrorMessage + "</br>" +
+        'lastProbe: '             + lastProbe + "</br>"
+    }
+
 
 }

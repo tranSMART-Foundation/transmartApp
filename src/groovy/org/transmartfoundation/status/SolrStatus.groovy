@@ -15,4 +15,17 @@ class SolrStatus {
 	String toString () {
 		return "SolrStatus (URL: " + url + ") - probe at: " + lastProbe
 	}
+
+        String toHTMLString () {
+		return  'url: '                   + url + "<br/>" +
+			'connected: '             + connected + "<br/>" +
+			'rwgAvailable: '          + rwgAvailable + "<br/>" +
+			'rwgNumberOfRecords: '    + rwgNumberOfRecords + "<br/>" +
+			'browseAvailable: '       + browseAvailable + "<br/>" +
+			'browseNumberOfRecords: ' + browseNumberOfRecords + "<br/>" +
+			'sampleAvailable: '       + sampleAvailable + "<br/>" +
+			'sampleNumberOfRecords: ' + sampleNumberOfRecords + "<br/>" +
+			'lastProbe: '             + lastProbe  + "<br/>"
+	}
+
 }
