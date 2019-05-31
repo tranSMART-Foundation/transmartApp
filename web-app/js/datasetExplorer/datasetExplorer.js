@@ -1194,7 +1194,7 @@ function createOntPanel() {
 
     ontFilterTree.setRootNode(ontFilterTreeRoot);
 
-    setupOntTree('navigateTermsPanel', 'Navigate Terms');
+    setupOntTree('navigateTermsPanel', 'Navigate Concepts');
 
     return ontTabPanel;
 }
